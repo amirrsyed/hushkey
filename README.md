@@ -1,5 +1,5 @@
 # Hushkey
-![Hushkey Logo](hushkey.png)
+![Hushkey Banner](HushkeyBanner.png)
 [![CI](https://github.com/amirrsyed/hushkey/actions/workflows/ci.yml/badge.svg)](https://github.com/amirrsyed/hushkey/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Release](https://img.shields.io/github/v/release/amirrsyed/hushkey)](https://github.com/amirrsyed/hushkey/releases/latest)
 
 **Silent dictation for macOS.** Hold a key, mouth your words with no sound, release, and the text
