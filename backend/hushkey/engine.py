@@ -67,7 +67,7 @@ class Engine:
             "tiny": self.cfg.tiny,
             "beam_size": self.cfg.beam_size,
             "kinematics": self.net.fusion is not None,
-            "kinematic_gate": float(torch.tanh(self.net.fusion.gate).abs().mean()) if self.net.fusion is not None else 0.0,
+            "kinematic_gate": float(torch.tanh(self.net.fusion.gate.detach()).abs().mean()) if self.net.fusion is not None else 0.0,
         }
 
     def _tensors(self, sample: Sample):
