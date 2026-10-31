@@ -1,0 +1,29 @@
+Hushkey
+=======
+
+Hushkey's own code (app/, backend/hushkey/ except _vendor/, scripts/) is MIT licensed (see LICENSE).
+
+Third-party code included in this repository
+--------------------------------------------
+* backend/hushkey/_vendor/espnet — ESPnet subset as distributed with Auto-AVSR and Chaplin.
+  Apache License 2.0 (backend/hushkey/_vendor/LICENSE-APACHE-2.0).
+  Copyright 2017–2019 Johns Hopkins University (Shinji Watanabe), Shigeki Karita;
+  Copyright 2021–2023 Imperial College London (Pingchuan Ma). Modified for Hushkey (see _vendor/README.md).
+* backend/hushkey/preprocess/mouth.py — adapted from Auto-AVSR / Chaplin video_process.py (Apache 2.0).
+* backend/hushkey/assets/unigram5000.model, unigram5000_units.txt, 20words_mean_face.npy — from Auto-AVSR (Apache 2.0).
+* app/Sources/Hushkey/Capture/MotionGate.swift — segmentation logic adapted from Subvox's
+  CaptureController (MIT, © 2026 Joe Blau).
+
+Model weights (NOT included; downloaded by `hushkey download`)
+--------------------------------------------------------------
+* LRS3_V_WER19.1 visual speech recognition model and lm_en_subword language model from the
+  Auto-AVSR project (Ma et al., ICASSP 2023), via Chaplin's Hugging Face mirror. They were trained
+  on LRS3, VoxCeleb2 and AVSpeech; the Auto-AVSR authors note that pretrained models "may have their
+  own licenses or terms and conditions derived from the dataset used for training". Treat them as
+  research-use only unless you have cleared those terms.
+* Adapters you train with Hushkey inherit the terms of the base model and of the data you train on.
+
+Not used
+--------
+* AV-HuBERT (facebookresearch/av_hubert) is under a non-commercial research license and depends on a
+  fairseq fork; Hushkey does not include or require it.

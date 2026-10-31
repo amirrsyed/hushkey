@@ -1,0 +1,27 @@
+name: Hushkey
+options:
+  bundleIdPrefix: dev.hushkey
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "-"   # ad-hoc; set DEVELOPMENT_TEAM to sign with your identity
+targets:
+  Hushkey:
+    type: application
+    platform: macOS
+    sources: [Sources/Hushkey]
+    info:
+      path: Resources/Info.plist
+    entitlements:
+      path: Resources/Hushkey.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.hushkey.app
+        ENABLE_HARDENED_RUNTIME: YES
+        INFOPLIST_FILE: Resources/Info.plist
