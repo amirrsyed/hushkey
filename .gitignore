@@ -16,6 +16,6 @@ DerivedData/
 *.pt
 *.npz
 *.task
-data/
-runs/
+/data/
+/runs/
 .DS_Store

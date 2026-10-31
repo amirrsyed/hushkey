@@ -1,0 +1,30 @@
+name: Release
+
+# Push a tag like v0.2.0 → builds Hushkey.dmg on macOS and attaches it to a GitHub Release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  dmg:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build app + DMG
+        run: scripts/package_dmg.sh
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" build/Hushkey.dmg \
+            --title "Hushkey $GITHUB_REF_NAME" \
+            --notes "Download **Hushkey.dmg**, drag Hushkey to Applications, then right-click ▸ Open the first time (not notarized). The welcome window installs the local model server (≈1.5 GB) with one click."
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Hushkey.dmg
+          path: build/Hushkey.dmg

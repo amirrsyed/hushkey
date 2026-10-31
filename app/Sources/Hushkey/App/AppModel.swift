@@ -41,6 +41,11 @@ final class AppModel {
     var trainingLog: [String] = []
     var isTraining = false
 
+    // In-app model-server installation (for people who installed the .app/.dmg, not the source)
+    var isInstallingBackend = false
+    var installLog: [String] = []
+    var backendInstalled = AppSettings.backendInstalled
+
     @ObservationIgnored let client: BackendClient
     @ObservationIgnored let pipeline: CapturePipeline
     @ObservationIgnored let backend = BackendProcess()
@@ -265,7 +270,15 @@ final class AppModel {
                 if obj["enrolled"] != nil { enrolledThisSession += 1 }
             } else if !text.isEmpty {
                 let out = AppSettings.trailingSpace ? text + " " : text
-                TextInserter.insert(out, mode: AppSettings.insertMode)
+                if TextInserter.insert(out, mode: AppSettings.insertMode) == .copiedOnly {
+                    accessibilityTrusted = false
+                    lastText = text
+                    partial = ""
+                    history.insert(Dictation(date: Date(), text: text, raw: raw, latencyMs: latency, app: sessionApp), at: 0)
+                    fail("Copied “\(text)” — press ⌘V. To type automatically, re-allow Hushkey in Accessibility settings (menu ▸ Finish setup).")
+                    scheduleCameraIdle()
+                    return
+                }
                 history.insert(Dictation(date: Date(), text: text, raw: raw, latencyMs: latency, app: sessionApp), at: 0)
                 if history.count > 50 { history.removeLast() }
             }
@@ -279,6 +292,36 @@ final class AppModel {
             fail(message)
             scheduleCameraIdle()
         }
+    }
+
+    // MARK: Model-server install
+
+    func installBackend() {
+        guard !isInstallingBackend else { return }
+        guard let script = AppSettings.bundledInstaller else {
+            installLog = ["This build has no bundled installer. From the source folder run: ./install.sh"]
+            return
+        }
+        isInstallingBackend = true
+        installLog = ["Installing the model server (PyTorch + ~1 GB model). This takes a few minutes…"]
+        backend.stopServer()
+        client.disconnect()
+        backend.run("\"\(script.path)\"", onLine: { [weak self] line in
+            guard let self else { return }
+            self.installLog.append(line)
+            if self.installLog.count > 400 { self.installLog.removeFirst(self.installLog.count - 400) }
+        }, onExit: { [weak self] code in
+            guard let self else { return }
+            self.isInstallingBackend = false
+            self.backendInstalled = AppSettings.backendInstalled
+            if code == 0 && self.backendInstalled {
+                UserDefaults.standard.set(AppSettings.defaultBackendCommand, forKey: AppSettings.Key.backendCommand)
+                self.installLog.append("✓ Installed — starting the server…")
+                Task { await self.connectBackend() }
+            } else {
+                self.installLog.append("✗ Install failed (exit \(code)). The lines above say why.")
+            }
+        })
     }
 
     // MARK: Enrollment + training
@@ -297,10 +340,10 @@ final class AppModel {
         guard !isTraining else { return }
         isTraining = true
         trainingLog = ["$ hushkey train personalize"]
-        // Reuse whatever environment prefix the serve command has (cd …, uv run, conda run …).
+        // Same interpreter/environment as the serve command, with `serve …` swapped for `train personalize`.
         let serve = AppSettings.backendCommand
-        let prefix = serve.range(of: "hushkey serve").map { String(serve[..<$0.lowerBound]) } ?? ""
-        let cmd = prefix + "hushkey train personalize"
+        let cmd = serve.range(of: " serve", options: .backwards).map { String(serve[..<$0.lowerBound]) + " train personalize" }
+            ?? "hushkey train personalize"
         backend.run(cmd, onLine: { [weak self] line in self?.trainingLog.append(line) }, onExit: { [weak self] code in
             guard let self else { return }
             self.isTraining = false

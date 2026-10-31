@@ -41,33 +41,56 @@ from the webcam instead of listening.
 | [LipNet-PyTorch](https://github.com/VIPL-Audio-Visual-Speech-Understanding/LipNet-PyTorch) | Reference for CTC sentence lip reading and Conv3D front-ends | Trained on GRID's fixed 6-word grammar, so it can't do open dictation |
 | [hilab-open-source/WatchYourMouth](https://github.com/hilab-open-source/WatchYourMouth) | Evidence that silent speech is decodable from geometry rather than RGB (depth point clouds). It motivated the landmark-geometry kinematic branch and per-utterance normalisation | Needs a TrueDepth/depth sensor and CUDA PointNet++ ops; a depth channel is on the roadmap |
 
-## Quick start
+## Install
 
-Requirements: macOS 14+ on Apple Silicon (Intel works, slower), Python 3.10+ (macOS's built-in 3.9 is too old: `brew install python@3.12`), Xcode 15+ or the Command Line Tools (`xcode-select --install`).
+Requirements: macOS 14+ (Apple Silicon recommended). Hushkey uses Python 3.10–3.13 if you have it;
+otherwise it downloads a private copy for itself. About 2.5 GB of disk space.
+
+### Option A: download the app (no Terminal)
+
+1. Download **Hushkey.dmg** from the [Releases](../../releases) page and drag Hushkey into Applications.
+2. The first time, **right-click Hushkey ▸ Open ▸ Open**. The build isn't notarized by Apple, so a plain
+   double-click is blocked once. If macOS says it's "damaged", run `xattr -dr com.apple.quarantine /Applications/Hushkey.app`.
+3. In the welcome window, allow **Camera** and **Accessibility**, then click **Install model server**
+   (one-time, ≈1.5 GB, a few minutes).
+
+### Option B: from source (one command)
 
 ```bash
 git clone https://github.com/<you>/hushkey && cd hushkey
-
-# 1) backend: venv + install + download pretrained weights (~1 GB)
-scripts/setup_backend.sh
-
-# 2) app
-scripts/build_app.sh            # → build/Hushkey.app   (or: cd app && xcodegen generate && open Hushkey.xcodeproj)
-open build/Hushkey.app
+xcode-select --install     # Apple's build tools, if you don't have them
+./install.sh               # model server + app in /Applications, then opens it
 ```
 
-On first launch Hushkey asks for:
+Re-run `./install.sh` to update and `./uninstall.sh` to remove. After installing, the source folder is no
+longer needed: everything lives in `/Applications/Hushkey.app` and `~/Library/Application Support/Hushkey`.
+`make` lists the shortcuts (`make install`, `make dmg`, `make test`, …).
 
-1. **Camera**: to see your mouth.
-2. **Accessibility**: to see the push-to-talk key in other apps and to paste the result.
-3. Nothing else: `setup_backend.sh` already pointed the app at the backend (see *Settings ▸ Backend*).
-   The app starts and stops the server for you.
+### After installing
 
-Optional cleanup with a local LLM (as in Chaplin): install [Ollama](https://ollama.com), run `ollama pull qwen3:4b`,
-and add `--llm` (plus `--vocabulary words.txt` for names and jargon) to the backend command.
+- **Open at login**: Hushkey ▸ Settings ▸ General.
+- **If text shows in the overlay but isn't typed**: macOS isn't letting Hushkey type. Open System Settings ▸
+  Privacy & Security ▸ Accessibility, remove Hushkey with **–**, add it again, and relaunch. Each new
+  unsigned build counts as a new app. Until then Hushkey copies the text to your clipboard and tells you to press ⌘V.
+- **Optional LLM cleanup** (as in Chaplin): install [Ollama](https://ollama.com), `ollama pull qwen3:4b`,
+  and append `--llm` to the command in Settings ▸ Backend.
 
-UI development without the 1 GB download: `hushkey serve --tiny` runs a random tiny model. The whole
-pipeline works, but the output is gibberish.
+### For developers
+
+`make dev` makes an editable backend in `backend/.venv` and points the app at it. `make app` builds the app
+only. `hushkey serve --tiny` runs a random tiny model for UI work without the 1 GB download (the output is
+gibberish). CI builds the app and runs the tests. Pushing a tag such as `v0.2.0` makes the Release workflow
+publish `Hushkey.dmg`.
+
+### Publishing your own copy on GitHub
+
+```bash
+# create an EMPTY repo named hushkey at https://github.com/new (no README/license), then:
+cd hushkey
+git remote add origin https://github.com/<you>/hushkey.git
+git push -u origin main
+git tag v0.1.0 && git push origin v0.1.0     # optional: builds Hushkey.dmg into a GitHub Release
+```
 
 ## Using it
 
@@ -117,6 +140,9 @@ backend/
     _vendor/espnet         Apache-2.0 decoder/model code from Auto-AVSR/Chaplin (patched for py3.12+)
   tests/                   synthetic talking faces → preprocessing, model, training, server
 docs/                      ARCHITECTURE.md (protocol, schemas), TRAINING.md
+scripts/                   install_backend.sh (also bundled in the app), build_app.sh, package_dmg.sh, setup_backend.sh (dev)
+install.sh uninstall.sh    one-command install / removal; Makefile wraps everything
+.github/workflows/         ci.yml (tests, app build, installer smoke test), release.yml (tag → Hushkey.dmg)
 ```
 
 ## Honest expectations
@@ -132,6 +158,7 @@ docs/                      ARCHITECTURE.md (protocol, schemas), TRAINING.md
 
 ## Roadmap
 
+- Developer ID signing + notarization in the release workflow: no right-click-to-open, and permissions survive updates
 - Core ML export of the frontend and encoder (run on the Neural Engine, drop the Python dependency for inference)
 - Chunked streaming encoder for word-by-word output
 - Extra channels behind the same gate: AirPods head/jaw motion (Subvox) and TrueDepth depth (Watch Your Mouth)
