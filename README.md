@@ -57,7 +57,7 @@ otherwise it downloads a private copy for itself. About 2.5 GB of disk space.
 ### Option B: from source (one command)
 
 ```bash
-git clone https://github.com/<you>/hushkey && cd hushkey
+git clone https://github.com/amirrsyed/hushkey && cd hushkey
 xcode-select --install     # Apple's build tools, if you don't have them
 ./install.sh               # model server + app in /Applications, then opens it
 ```
@@ -87,7 +87,7 @@ publish `Hushkey.dmg`.
 ```bash
 # create an EMPTY repo named hushkey at https://github.com/new (no README/license), then:
 cd hushkey
-git remote add origin https://github.com/<you>/hushkey.git
+git remote add origin https://github.com/amirrsyed/hushkey.git
 git push -u origin main
 git tag v0.1.0 && git push origin v0.1.0     # optional: builds Hushkey.dmg into a GitHub Release
 ```
