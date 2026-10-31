@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+# Swift / Xcode
+app/.build/
+app/.swiftpm/
+app/Hushkey.xcodeproj/
+build/
+DerivedData/
+*.xcuserstate
+# data & weights never belong in git
+*.pth
+*.pt
+*.npz
+*.task
+data/
+runs/
+.DS_Store
