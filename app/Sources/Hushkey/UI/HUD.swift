@@ -53,7 +53,7 @@ final class HUDController {
 
 struct HUDView: View {
     @Environment(AppModel.self) private var model
-    @AppStorage(Settings.Key.showHUDPreview) private var showPreview = true
+    @AppStorage(AppSettings.Key.showHUDPreview) private var showPreview = true
 
     var body: some View {
         HStack(spacing: 12) {

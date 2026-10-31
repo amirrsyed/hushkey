@@ -3,7 +3,7 @@ import SwiftUI
 struct OnboardingView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismissWindow) private var dismissWindow
-    @AppStorage(Settings.Key.onboarded) private var onboarded = false
+    @AppStorage(AppSettings.Key.onboarded) private var onboarded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {

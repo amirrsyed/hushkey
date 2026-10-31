@@ -41,7 +41,7 @@ struct MenuBarLabel: View {
         icon.task {
             delegate.model = model
             model.start()
-            let needs = !UserDefaults.standard.bool(forKey: Settings.Key.onboarded) || !model.cameraAuthorized || !model.accessibilityTrusted
+            let needs = !UserDefaults.standard.bool(forKey: AppSettings.Key.onboarded) || !model.cameraAuthorized || !model.accessibilityTrusted
             if needs {
                 openWindow(id: "onboarding")
                 NSApp.activate(ignoringOtherApps: true)
