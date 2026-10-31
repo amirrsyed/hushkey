@@ -23,7 +23,7 @@ jobs:
         run: pytest -q
 
   app:
-    runs-on: macos-14
+    runs-on: macos-15
     defaults:
       run:
         working-directory: app
@@ -39,7 +39,7 @@ jobs:
           path: build/Hushkey.dmg
 
   installer:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - name: Install model server into a temp home (no weights download)
