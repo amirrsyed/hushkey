@@ -32,7 +32,7 @@ final class AppModel {
     var cameraAuthorized = CameraService.authorization == .authorized
     var accessibilityTrusted = TextInserter.isTrusted
     var handsFreeLocked = false
-    var autoMode = Settings.handsFree
+    var autoMode = AppSettings.handsFree
 
     // Enrollment ("Train on my mouth")
     var enrollmentPrompt: String?  // non-nil while the enrollment window is open
@@ -41,11 +41,11 @@ final class AppModel {
     var trainingLog: [String] = []
     var isTraining = false
 
-    @ObservationIgnored let client = BackendClient(url: Settings.serverURL)
-    @ObservationIgnored lazy var pipeline = CapturePipeline(client: client)
+    @ObservationIgnored let client: BackendClient
+    @ObservationIgnored let pipeline: CapturePipeline
     @ObservationIgnored let backend = BackendProcess()
     @ObservationIgnored let hotkeys = HotkeyMonitor()
-    @ObservationIgnored lazy var hud = HUDController(model: self)
+    @ObservationIgnored private(set) var hud: HUDController!
     @ObservationIgnored private var idleCameraTask: Task<Void, Never>?
     @ObservationIgnored private var finalTimeoutTask: Task<Void, Never>?
     @ObservationIgnored private var sessionApp: String?
@@ -54,16 +54,23 @@ final class AppModel {
 
     static let cameraIdleSeconds: TimeInterval = 30
 
+    init() {
+        let c = BackendClient(url: AppSettings.serverURL)
+        client = c
+        pipeline = CapturePipeline(client: c)
+        hud = HUDController(model: self)
+    }
+
     func start() {
         guard !started else { return }
         started = true
-        Settings.registerDefaults()
+        AppSettings.registerDefaults()
         // These fire on background queues (URLSession, camera); hop to the main actor.
         client.onEvent = { @Sendable [weak self] ev in Task { @MainActor in self?.handle(ev) } }
         pipeline.onUpdate = { @Sendable [weak self] u in Task { @MainActor in self?.apply(u) } }
         backend.onLog = { @Sendable [weak self] line in Task { @MainActor in self?.appendLog(line) } }
 
-        hotkeys.hotkey = Settings.hotkey
+        hotkeys.hotkey = AppSettings.hotkey
         hotkeys.onPress = { [weak self] in self?.beginDictation() }
         hotkeys.onRelease = { [weak self] in self?.endDictation() }
         hotkeys.onCancel = { [weak self] in self?.cancelDictation() }
@@ -78,25 +85,25 @@ final class AppModel {
         hotkeys.stop()
         pipeline.stopCamera()
         client.disconnect()
-        if Settings.autoLaunchBackend { backend.stopServer() }
+        if AppSettings.autoLaunchBackend { backend.stopServer() }
     }
 
     // MARK: Backend
 
     func connectBackend() async {
-        if await BackendClient.health(Settings.healthURL) == nil, Settings.autoLaunchBackend, !backend.isRunning {
-            appendLog("starting backend: \(Settings.backendCommand)")
-            backend.startServer(command: Settings.backendCommand)
+        if await BackendClient.health(AppSettings.healthURL) == nil, AppSettings.autoLaunchBackend, !backend.isRunning {
+            appendLog("starting backend: \(AppSettings.backendCommand)")
+            backend.startServer(command: AppSettings.backendCommand)
             // The model takes a few seconds to load; the client keeps retrying with backoff.
         }
-        client.connect(to: Settings.serverURL)
+        client.connect(to: AppSettings.serverURL)
     }
 
     func restartBackend() {
         client.disconnect()
         backendConnected = false
-        backend.restartServer(command: Settings.backendCommand)
-        after(2) { [weak self] in self?.client.connect(to: Settings.serverURL) }
+        backend.restartServer(command: AppSettings.backendCommand)
+        after(2) { [weak self] in self?.client.connect(to: AppSettings.serverURL) }
     }
 
     private func appendLog(_ line: String) {
@@ -144,7 +151,7 @@ final class AppModel {
             return false
         }
         do {
-            try pipeline.startCamera(cameraID: Settings.cameraID)
+            try pipeline.startCamera(cameraID: AppSettings.cameraID)
             return true
         } catch {
             fail(error.localizedDescription)
@@ -175,7 +182,7 @@ final class AppModel {
         partial = ""
         phase = .listening
         hud.show()
-        var start: [String: Any] = ["type": "start", "partials": Settings.showPartials]
+        var start: [String: Any] = ["type": "start", "partials": AppSettings.showPartials]
         if let app = sessionApp { start["app"] = app }
         if let e = sessionEnrollText { start["enroll_text"] = e }
         pipeline.beginUtterance(start)
@@ -204,7 +211,7 @@ final class AppModel {
 
     func setAutoMode(_ on: Bool) {
         autoMode = on
-        UserDefaults.standard.set(on, forKey: Settings.Key.handsFree)
+        UserDefaults.standard.set(on, forKey: AppSettings.Key.handsFree)
         pipeline.setHandsFree(on)
         if on {
             _ = ensureCamera()
@@ -257,8 +264,8 @@ final class AppModel {
                 lastEnrollment = (prompt, raw)
                 if obj["enrolled"] != nil { enrolledThisSession += 1 }
             } else if !text.isEmpty {
-                let out = Settings.trailingSpace ? text + " " : text
-                TextInserter.insert(out, mode: Settings.insertMode)
+                let out = AppSettings.trailingSpace ? text + " " : text
+                TextInserter.insert(out, mode: AppSettings.insertMode)
                 history.insert(Dictation(date: Date(), text: text, raw: raw, latencyMs: latency, app: sessionApp), at: 0)
                 if history.count > 50 { history.removeLast() }
             }
@@ -291,7 +298,7 @@ final class AppModel {
         isTraining = true
         trainingLog = ["$ hushkey train personalize"]
         // Reuse whatever environment prefix the serve command has (cd …, uv run, conda run …).
-        let serve = Settings.backendCommand
+        let serve = AppSettings.backendCommand
         let prefix = serve.range(of: "hushkey serve").map { String(serve[..<$0.lowerBound]) } ?? ""
         let cmd = prefix + "hushkey train personalize"
         backend.run(cmd, onLine: { [weak self] line in self?.trainingLog.append(line) }, onExit: { [weak self] code in

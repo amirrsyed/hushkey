@@ -71,7 +71,7 @@ struct EnrollmentView: View {
     }
 
     private var recordButton: some View {
-        Label(pressing ? "Recording… release when done" : "Hold to record (or hold \(Settings.hotkey.label))",
+        Label(pressing ? "Recording… release when done" : "Hold to record (or hold \(AppSettings.hotkey.label))",
               systemImage: pressing ? "record.circle.fill" : "record.circle")
             .padding(.horizontal, 14).padding(.vertical, 8)
             .background(pressing ? Color.red.opacity(0.85) : Color.accentColor, in: Capsule())

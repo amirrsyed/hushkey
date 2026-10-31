@@ -1,7 +1,7 @@
 import Foundation
 
-/// UserDefaults keys and defaults. Views bind with `@AppStorage(Settings.Key.x)`.
-enum Settings {
+/// UserDefaults keys and defaults. Views bind with `@AppStorage(AppSettings.Key.x)`.
+enum AppSettings {
     enum Key {
         static let serverURL = "serverURL"
         static let autoLaunchBackend = "autoLaunchBackend"

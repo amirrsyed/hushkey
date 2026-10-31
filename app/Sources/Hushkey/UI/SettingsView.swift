@@ -3,15 +3,15 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
-    @AppStorage(Settings.Key.serverURL) private var serverURL = "ws://127.0.0.1:8765/v1/stream"
-    @AppStorage(Settings.Key.autoLaunchBackend) private var autoLaunch = true
-    @AppStorage(Settings.Key.backendCommand) private var backendCommand = "hushkey serve"
-    @AppStorage(Settings.Key.hotkey) private var hotkey = Hotkey.rightOption.rawValue
-    @AppStorage(Settings.Key.insertMode) private var insertMode = InsertMode.paste.rawValue
-    @AppStorage(Settings.Key.trailingSpace) private var trailingSpace = true
-    @AppStorage(Settings.Key.showPartials) private var showPartials = true
-    @AppStorage(Settings.Key.showHUDPreview) private var showPreview = true
-    @AppStorage(Settings.Key.cameraID) private var cameraID = ""
+    @AppStorage(AppSettings.Key.serverURL) private var serverURL = "ws://127.0.0.1:8765/v1/stream"
+    @AppStorage(AppSettings.Key.autoLaunchBackend) private var autoLaunch = true
+    @AppStorage(AppSettings.Key.backendCommand) private var backendCommand = "hushkey serve"
+    @AppStorage(AppSettings.Key.hotkey) private var hotkey = Hotkey.rightOption.rawValue
+    @AppStorage(AppSettings.Key.insertMode) private var insertMode = InsertMode.paste.rawValue
+    @AppStorage(AppSettings.Key.trailingSpace) private var trailingSpace = true
+    @AppStorage(AppSettings.Key.showPartials) private var showPartials = true
+    @AppStorage(AppSettings.Key.showHUDPreview) private var showPreview = true
+    @AppStorage(AppSettings.Key.cameraID) private var cameraID = ""
 
     var body: some View {
         TabView {

@@ -16,7 +16,7 @@ struct MenuView: View {
                 }
                 .buttonStyle(.borderedProminent)
             }
-            Text("Hold **\(Settings.hotkey.label)** and silently mouth. Release to type. Double-tap to go hands-free, Esc to cancel.")
+            Text("Hold **\(AppSettings.hotkey.label)** and silently mouth. Release to type. Double-tap to go hands-free, Esc to cancel.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
