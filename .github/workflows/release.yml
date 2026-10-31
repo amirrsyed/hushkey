@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   dmg:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - name: Build app + DMG
@@ -21,6 +21,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # If the release already exists (e.g. created by hand on GitHub), just attach/replace the DMG.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" build/Hushkey.dmg --clobber
+            exit 0
+          fi
           gh release create "$GITHUB_REF_NAME" build/Hushkey.dmg \
             --title "Hushkey $GITHUB_REF_NAME" \
             --notes "Download **Hushkey.dmg**, drag Hushkey to Applications, then right-click ▸ Open the first time (not notarized). The welcome window installs the local model server (≈1.5 GB) with one click."
