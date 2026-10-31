@@ -28,7 +28,7 @@ cd "$ROOT/backend"
 .venv/bin/hushkey download
 
 CMD="cd \"$ROOT/backend\" && .venv/bin/hushkey serve"
-defaults write dev.hushkey.app backendCommand "$CMD"
+defaults write dev.hushkey.app backendCommand -string "$CMD"
 echo
 echo "✓ Backend ready. The Hushkey app is set to start it with:"
 echo "    $CMD"
