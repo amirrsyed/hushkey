@@ -43,7 +43,7 @@ from the webcam instead of listening.
 
 ## Quick start
 
-Requirements: macOS 14+ on Apple Silicon (Intel works, slower), Python 3.10+, Xcode 15+ or the Swift 5.9 toolchain.
+Requirements: macOS 14+ on Apple Silicon (Intel works, slower), Python 3.10+ (macOS's built-in 3.9 is too old: `brew install python@3.12`), Xcode 15+ or the Command Line Tools (`xcode-select --install`).
 
 ```bash
 git clone https://github.com/<you>/hushkey && cd hushkey
@@ -60,8 +60,8 @@ On first launch Hushkey asks for:
 
 1. **Camera**: to see your mouth.
 2. **Accessibility**: to see the push-to-talk key in other apps and to paste the result.
-3. **Backend command**: in *Settings ▸ Backend*, set it to the line `setup_backend.sh` printed, e.g.
-   `cd ~/hushkey/backend && .venv/bin/hushkey serve`. The app starts and stops the server for you.
+3. Nothing else: `setup_backend.sh` already pointed the app at the backend (see *Settings ▸ Backend*).
+   The app starts and stops the server for you.
 
 Optional cleanup with a local LLM (as in Chaplin): install [Ollama](https://ollama.com), run `ollama pull qwen3:4b`,
 and add `--llm` (plus `--vocabulary words.txt` for names and jargon) to the backend command.
