@@ -30,7 +30,7 @@ struct OnboardingView: View {
             step(
                 done: model.backendConnected,
                 title: "Local model server",
-                detail: "Install the backend once: `cd backend && pip install -e . && hushkey download`. Hushkey starts it for you.",
+                detail: "One-time setup: in Terminal, go to the hushkey folder and run `scripts/setup_backend.sh`, then click Retry. After that Hushkey starts the server for you.",
                 action: "Retry connection"
             ) { Task { await model.connectBackend() } }
             Spacer()
