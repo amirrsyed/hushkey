@@ -1,4 +1,5 @@
 import AVFoundation
+import ServiceManagement
 import SwiftUI
 
 struct SettingsView: View {
@@ -12,10 +13,19 @@ struct SettingsView: View {
     @AppStorage(AppSettings.Key.showPartials) private var showPartials = true
     @AppStorage(AppSettings.Key.showHUDPreview) private var showPreview = true
     @AppStorage(AppSettings.Key.cameraID) private var cameraID = ""
+    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     var body: some View {
         TabView {
             Form {
+                Toggle("Open Hushkey at login", isOn: $launchAtLogin)
+                    .onChange(of: launchAtLogin) { _, on in
+                        do {
+                            if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+                        } catch {
+                            launchAtLogin = SMAppService.mainApp.status == .enabled
+                        }
+                    }
                 Picker("Push-to-talk key", selection: $hotkey) {
                     ForEach(Hotkey.allCases) { Text($0.label).tag($0.rawValue) }
                 }
@@ -44,6 +54,15 @@ struct SettingsView: View {
                 HStack {
                     Button("Reconnect") { Task { await model.connectBackend() } }
                     Button("Restart backend") { model.restartBackend() }
+                    if AppSettings.bundledInstaller != nil {
+                        Button(model.isInstallingBackend ? "Installing…" : (model.backendInstalled ? "Reinstall model server" : "Install model server")) {
+                            model.installBackend()
+                        }
+                        .disabled(model.isInstallingBackend)
+                    }
+                }
+                if model.isInstallingBackend || !model.installLog.isEmpty {
+                    Text(model.installLog.last ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
                 GroupBox("Backend log") {
                     ScrollView {

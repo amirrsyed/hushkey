@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# One-time backend setup on a Mac: find Python 3.10+, create a virtualenv, install,
-# download the pretrained weights, and point the Hushkey app at the new backend.
+# DEVELOPER setup: editable install in backend/.venv (code changes take effect on restart) and
+# point the app at it. Regular users: run ./install.sh instead.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 

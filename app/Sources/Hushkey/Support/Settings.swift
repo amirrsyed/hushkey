@@ -16,11 +16,40 @@ enum AppSettings {
         static let onboarded = "onboarded"
     }
 
+    /// ~/Library/Application Support/Hushkey — models, adapters, enrollment clips and the server's venv.
+    static var hushkeyHome: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Hushkey")
+    }
+
+    /// Where `install_backend.sh` puts the model server.
+    static var venvPython: URL { hushkeyHome.appendingPathComponent("venv/bin/python") }
+    static var backendInstalled: Bool { FileManager.default.isExecutableFile(atPath: venvPython.path) }
+
+    static var defaultBackendCommand: String {
+        backendInstalled ? "\"\(venvPython.path)\" -m hushkey.cli serve" : "hushkey serve"
+    }
+
+    /// The model-server installer bundled inside Hushkey.app (see scripts/build_app.sh).
+    static var bundledInstaller: URL? {
+        guard let url = Bundle.main.resourceURL?.appendingPathComponent("install_backend.sh"),
+              FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return url
+    }
+
     static func registerDefaults() {
+        // A saved command that `cd`s into a folder that no longer exists (e.g. a deleted download)
+        // is replaced by the standard install location when that exists.
+        if backendInstalled, let saved = UserDefaults.standard.string(forKey: Key.backendCommand),
+           let r = saved.range(of: "cd \""), let end = saved[r.upperBound...].firstIndex(of: "\"") {
+            let dir = String(saved[r.upperBound..<end])
+            if !FileManager.default.fileExists(atPath: dir) {
+                UserDefaults.standard.removeObject(forKey: Key.backendCommand)
+            }
+        }
         UserDefaults.standard.register(defaults: [
             Key.serverURL: "ws://127.0.0.1:8765/v1/stream",
             Key.autoLaunchBackend: true,
-            Key.backendCommand: "hushkey serve",
+            Key.backendCommand: defaultBackendCommand,
             Key.hotkey: Hotkey.rightOption.rawValue,
             Key.insertMode: InsertMode.paste.rawValue,
             Key.trailingSpace: true,
@@ -50,7 +79,7 @@ enum AppSettings {
     static var handsFree: Bool { UserDefaults.standard.bool(forKey: Key.handsFree) }
     static var showPartials: Bool { UserDefaults.standard.bool(forKey: Key.showPartials) }
     static var autoLaunchBackend: Bool { UserDefaults.standard.bool(forKey: Key.autoLaunchBackend) }
-    static var backendCommand: String { UserDefaults.standard.string(forKey: Key.backendCommand) ?? "hushkey serve" }
+    static var backendCommand: String { UserDefaults.standard.string(forKey: Key.backendCommand) ?? defaultBackendCommand }
     static var cameraID: String { UserDefaults.standard.string(forKey: Key.cameraID) ?? "" }
 }
 

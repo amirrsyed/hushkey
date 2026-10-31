@@ -3,6 +3,8 @@ import ApplicationServices
 
 /// Puts text at the cursor of the frontmost app.
 enum TextInserter {
+    /// Note: after rebuilding an ad-hoc-signed app, System Settings may still *show* Hushkey as
+    /// allowed while macOS treats the new build as a different app and returns false here.
     static var isTrusted: Bool { AXIsProcessTrusted() }
 
     /// Shows the system prompt that sends the user to Privacy & Security ▸ Accessibility.
@@ -12,12 +14,27 @@ enum TextInserter {
         return AXIsProcessTrustedWithOptions([key: true] as CFDictionary)
     }
 
-    static func insert(_ text: String, mode: InsertMode) {
-        guard !text.isEmpty else { return }
+    enum Outcome { case inserted, copiedOnly }
+
+    /// Without Accessibility permission macOS silently drops synthetic keystrokes, so in that case
+    /// we put the text on the clipboard and report `.copiedOnly` instead of failing invisibly.
+    @discardableResult
+    static func insert(_ text: String, mode: InsertMode) -> Outcome {
+        guard !text.isEmpty else { return .inserted }
+        guard isTrusted else {
+            copy(text)
+            return .copiedOnly
+        }
         switch mode {
         case .paste: paste(text)
         case .type: type(text)
         }
+        return .inserted
+    }
+
+    static func copy(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 
     /// Clipboard + ⌘V, then restore the previous clipboard contents.
@@ -32,16 +49,22 @@ enum TextInserter {
         pb.setString(text, forType: .string)
         let changeCount = pb.changeCount
 
-        let src = CGEventSource(stateID: .combinedSessionState)
-        let vKey: CGKeyCode = 9  // kVK_ANSI_V
-        let down = CGEvent(keyboardEventSource: src, virtualKey: vKey, keyDown: true)
-        let up = CGEvent(keyboardEventSource: src, virtualKey: vKey, keyDown: false)
-        down?.flags = .maskCommand
-        up?.flags = .maskCommand
-        down?.post(tap: .cghidEventTap)
-        up?.post(tap: .cghidEventTap)
+        // Full ⌘ down → V down → V up → ⌘ up sequence: some apps (Electron, Java) check the
+        // modifier key events rather than only the flags on the V event.
+        let src = CGEventSource(stateID: .hidSystemState)
+        let cmdKey: CGKeyCode = 0x37, vKey: CGKeyCode = 0x09
+        let events: [(CGKeyCode, Bool, CGEventFlags)] = [
+            (cmdKey, true, .maskCommand), (vKey, true, .maskCommand), (vKey, false, .maskCommand), (cmdKey, false, []),
+        ]
+        for (key, down, flags) in events {
+            let e = CGEvent(keyboardEventSource: src, virtualKey: key, keyDown: down)
+            e?.flags = flags
+            e?.post(tap: .cghidEventTap)
+            usleep(8000)
+        }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        // Slow apps read the clipboard late; wait before restoring the user's clipboard.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             guard pb.changeCount == changeCount else { return }  // user copied something meanwhile
             pb.clearContents()
             let items: [NSPasteboardItem] = saved.map { d in
@@ -55,7 +78,7 @@ enum TextInserter {
 
     /// Synthesised Unicode keystrokes (works where paste is blocked, slower for long text).
     private static func type(_ text: String) {
-        let src = CGEventSource(stateID: .combinedSessionState)
+        let src = CGEventSource(stateID: .hidSystemState)
         let utf16 = Array(text.utf16)
         var i = 0
         while i < utf16.count {

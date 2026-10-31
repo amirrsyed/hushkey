@@ -24,15 +24,37 @@ struct OnboardingView: View {
             step(
                 done: model.accessibilityTrusted,
                 title: "Accessibility",
-                detail: "Needed to notice the push-to-talk key in any app and to type the result at your cursor.",
+                detail: "Needed to notice the push-to-talk key in any app and to type the result at your cursor. If Hushkey is already listed but this isn't ticked, remove it with “–” and add it again: macOS treats each new build as a new app.",
                 action: "Open Accessibility settings"
             ) { model.requestAccessibility() }
-            step(
-                done: model.backendConnected,
-                title: "Local model server",
-                detail: "One-time setup: in Terminal, go to the hushkey folder and run `scripts/setup_backend.sh`, then click Retry. After that Hushkey starts the server for you.",
-                action: "Retry connection"
-            ) { Task { await model.connectBackend() } }
+            if model.backendInstalled || AppSettings.bundledInstaller == nil {
+                step(
+                    done: model.backendConnected,
+                    title: "Local model server",
+                    detail: model.backendInstalled
+                        ? "Installed. It takes 10–30 s to load the model after Hushkey starts it."
+                        : "Not installed yet. From the source folder run `./install.sh` in Terminal, then click Retry.",
+                    action: "Retry connection"
+                ) { Task { await model.connectBackend() } }
+            } else {
+                step(
+                    done: false,
+                    title: "Local model server",
+                    detail: "One-time download of the lip-reading model and its runtime (≈1.5 GB, a few minutes). Everything stays on this Mac.",
+                    action: model.isInstallingBackend ? "Installing…" : "Install model server"
+                ) { model.installBackend() }
+            }
+            if model.isInstallingBackend || !model.installLog.isEmpty {
+                HStack(spacing: 8) {
+                    if model.isInstallingBackend { ProgressView().controlSize(.small) }
+                    Text(model.installLog.last ?? "")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                }
+                .padding(.leading, 32)
+            }
             Spacer()
             HStack {
                 Text("Tip: sit facing the camera with your mouth and neck visible and even lighting.")
@@ -43,7 +65,7 @@ struct OnboardingView: View {
             }
         }
         .padding(24)
-        .frame(width: 560, height: 440)
+        .frame(width: 580, height: 500)
         .onAppear { model.refreshPermissions() }
     }
 
